@@ -1,0 +1,1106 @@
+﻿<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Рандомный CS2 сервер</title>
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700&display=swap");
+
+    :root {
+      --bg-deep: #010824;
+      --bg-dark: #021032;
+      --card: #061946f2;
+      --text-main: #a9cbf6;
+      --text-soft: #7ea7df;
+      --btn-main-a: #0b56bb;
+      --btn-main-b: #276fde;
+      --btn-sec: #113776;
+      --panel: #000b2e;
+      --ok: #93ffff;
+      --err: #ff8ca8;
+      --input-bg: #051439;
+      --input-border: #0a2b67;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+
+    body {
+      margin: 0;
+      font-family: "Exo 2", "Segoe UI", Tahoma, sans-serif;
+      color: var(--text-main);
+      background:
+        radial-gradient(40% 80% at 50% 8%, rgba(16, 58, 138, 0.34), transparent 68%),
+        radial-gradient(85% 85% at 0% 0%, rgba(18, 57, 130, 0.14), transparent 60%),
+        linear-gradient(180deg, var(--bg-dark), var(--bg-deep));
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      overflow: hidden;
+    }
+
+    .layout {
+      width: min(1120px, 100%);
+      display: grid;
+      grid-template-columns: minmax(560px, 1fr) 320px;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .pane {
+      border-radius: 18px;
+      border: none;
+      background: var(--card);
+      box-shadow: 0 24px 70px rgba(2, 10, 37, 0.72), 0 0 38px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(25, 78, 170, 0.18), 0 0 22px rgba(24, 92, 212, 0.12);
+      opacity: 0;
+      transform: translateY(44px) scale(0.965);
+      filter: blur(14px);
+      transition:
+        opacity 700ms cubic-bezier(0.2, 0.75, 0.2, 1),
+        transform 700ms cubic-bezier(0.2, 0.75, 0.2, 1),
+        filter 620ms ease-out;
+    }
+
+    .card { padding: 30px; }
+    .filters { padding: 18px; }
+
+    body.loaded .pane {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      filter: blur(0);
+    }
+
+    body.loaded .filters { transition-delay: 90ms; }
+    .redirect-banner {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      width: min(360px, calc(100vw - 28px));
+      background: linear-gradient(180deg, rgba(8, 27, 73, 0.97), rgba(5, 18, 52, 0.96));
+      border-radius: 14px;
+      border: 1px solid rgba(70, 137, 255, 0.34);
+      box-shadow:
+        0 18px 36px rgba(0, 0, 0, 0.55),
+        0 0 22px rgba(45, 117, 255, 0.24);
+      padding: 14px 14px 12px;
+      z-index: 30;
+      opacity: 0;
+      transform: translateX(-120%);
+      animation: bannerIn 560ms cubic-bezier(0.2, 0.8, 0.2, 1) 420ms forwards;
+    }
+
+    .redirect-banner.is-hiding {
+      animation: bannerOut 300ms ease forwards;
+    }
+
+    .redirect-banner__close {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      width: 30px;
+      height: 30px;
+      border: none;
+      background: transparent;
+      color: #e5f1ff;
+      font-size: 1.15rem;
+      line-height: 1;
+      cursor: pointer;
+      opacity: 0.8;
+    }
+
+    .redirect-banner__close:hover {
+      opacity: 1;
+    }
+
+    .redirect-banner__title {
+      margin: 0 22px 6px 0;
+      font-family: "Exo 2", sans-serif;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #d8ebff;
+    }
+
+    .redirect-banner__text {
+      margin: 0 0 10px;
+      color: #9ec3f7;
+      font-size: 0.88rem;
+      line-height: 1.35;
+    }
+
+    .redirect-banner__link {
+      display: inline-block;
+      color: #e6f2ff;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 0.88rem;
+      border-bottom: 1px dashed rgba(188, 220, 255, 0.8);
+    }
+
+    .redirect-banner__link:hover {
+      color: #ffffff;
+      border-bottom-color: #ffffff;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: clamp(1.55rem, 3.7vw, 2.35rem);
+      line-height: 1.02;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+    }
+
+    .sub {
+      margin: 0;
+      color: var(--text-soft);
+      font-size: clamp(0.9rem, 1.7vw, 1.08rem);
+      line-height: 1.45;
+      max-width: 93%;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 20px;
+      margin-bottom: 14px;
+    }
+
+    .btn {
+      border: 0;
+      border-radius: 12px;
+      padding: 11px 14px;
+      font-family: inherit;
+      font-size: 0.86rem;
+      font-weight: 700;
+      color: #d8e9ff;
+      cursor: pointer;
+      transition: transform 0.16s ease, filter 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .btn:hover { filter: brightness(1.08); }
+    .btn:active { transform: translateY(1px) scale(0.995); }
+    .btn:disabled { opacity: 0.58; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    .btn-main {
+      min-width: 150px;
+      background: linear-gradient(145deg, var(--btn-main-a), var(--btn-main-b));
+      box-shadow: 0 8px 18px rgba(20, 88, 203, 0.28);
+    }
+
+    .btn-sec { background: linear-gradient(145deg, #174993, var(--btn-sec)); }
+
+    .status {
+      min-height: 1.3em;
+      margin: 0 0 16px;
+      color: var(--text-soft);
+      font-size: 0.9rem;
+      transition: color 0.2s ease;
+    }
+
+    .status.error { color: var(--err); }
+
+    .output, .mini-panel {
+      border-radius: 14px;
+      background: var(--panel);
+      border: none;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.38), inset 0 0 0 1px rgba(8, 22, 56, 0.22), 0 0 16px rgba(23, 83, 188, 0.08);
+      padding: 14px;
+    }
+
+    .main-grid {
+      display: grid;
+      gap: 12px;
+    }
+    .panel-toggle-target {
+      overflow: hidden;
+      max-height: 0;
+      opacity: 0;
+      transform: translateY(-12px) scale(0.985);
+      filter: blur(6px);
+      pointer-events: none;
+      margin-top: 0;
+      transition: max-height 420ms ease, opacity 300ms ease, transform 420ms cubic-bezier(0.2, 0.75, 0.2, 1), filter 300ms ease, margin-top 260ms ease;
+    }
+
+    .panel-toggle-target.is-open {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      filter: blur(0);
+      pointer-events: auto;
+    }
+
+    .panel-history {
+      --open-height: 260px;
+      transform-origin: top center;
+    }
+
+    .panel-history.is-open {
+      max-height: var(--open-height);
+      margin-top: 0;
+    }
+
+    .panel-preset {
+      --open-height: 170px;
+      transform-origin: top right;
+      margin-bottom: 0;
+    }
+
+    .panel-preset.is-open {
+      max-height: var(--open-height);
+      margin-bottom: 10px;
+    }
+.label {
+      display: block;
+      color: #87aede;
+      font-size: 0.8rem;
+      letter-spacing: 0.11em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .command {
+      margin: 0;
+      font-family: "Consolas", "Courier New", monospace;
+      font-size: clamp(1rem, 2vw, 1.3rem);
+      color: var(--ok);
+      line-height: 1.24;
+      word-break: break-word;
+    }
+
+    .meta {
+      margin: 10px 0 0;
+      font-size: 0.88rem;
+      color: #8fb7ef;
+    }
+
+    .mini-title {
+      margin: 0 0 8px;
+      font-size: 0.83rem;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      color: #85b0e8;
+    }
+
+    .list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      gap: 8px;
+      max-height: 170px;
+      overflow: auto;
+    }
+
+    .list-item {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 6px;
+      align-items: start;
+      background: rgba(3, 16, 43, 0.65);
+      border-radius: 10px;
+      padding: 8px;
+    }
+
+    .list-item p {
+      margin: 0;
+      font-size: 0.8rem;
+      color: #8db5eb;
+      line-height: 1.3;
+    }
+
+    .list-item code {
+      font-size: 0.78rem;
+      color: #9af3ff;
+      display: block;
+      margin-bottom: 4px;
+      word-break: break-all;
+    }
+
+    .list-empty {
+      margin: 0;
+      font-size: 0.82rem;
+      color: #7096cc;
+    }
+
+    .small-btn {
+      border: 0;
+      border-radius: 8px;
+      padding: 6px 8px;
+      font-size: 0.74rem;
+      font-family: inherit;
+      font-weight: 700;
+      color: #d6e8ff;
+      background: #123f87;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .small-btn.alt { background: #243b63; }
+
+    .f-title {
+      margin: 0 0 10px;
+      font-size: 0.94rem;
+      color: #9ec3f7;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .field { margin-bottom: 10px; }
+
+    .field label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.78rem;
+      color: #8eb3e8;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .control {
+      width: 100%;
+      height: 38px;
+      border-radius: 10px;
+      border: 1px solid var(--input-border);
+      background: var(--input-bg);
+      color: #d5e7ff;
+      font-family: inherit;
+      font-size: 0.88rem;
+      padding: 0 12px;
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .control:focus {
+      border-color: #1558bf;
+      box-shadow: 0 0 0 3px rgba(21, 88, 191, 0.24);
+    }
+
+    .preset-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .preset-btn {
+      width: 100%;
+      border: 1px solid #13418c;
+      border-radius: 10px;
+      background: #0b2f6b;
+      color: #d7e8ff;
+      font-size: 0.8rem;
+      font-family: inherit;
+      font-weight: 700;
+      padding: 8px 10px;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .filter-note {
+      margin: 8px 0 0;
+      color: #759bd1;
+      font-size: 0.76rem;
+      line-height: 1.35;
+    }
+
+    .side-section { margin-top: 14px; }
+    .window-toggles {
+      position: fixed;
+      right: 18px;
+      bottom: 14px;
+      display: flex;
+      gap: 14px;
+      z-index: 20;
+      opacity: 0;
+      transform: translateX(64px);
+      transition: opacity 520ms ease 260ms, transform 620ms cubic-bezier(0.2, 0.75, 0.2, 1) 260ms;
+    }
+
+    body.loaded .window-toggles {
+      opacity: 1;
+      transform: translateX(0);
+    }
+.toggle-link {
+      border: 0;
+      background: transparent;
+      color: #ffffff;
+      font-family: inherit;
+      font-size: 0.86rem;
+      font-weight: 600;
+      padding: 0;
+      cursor: pointer;
+      opacity: 0.92;
+    }
+
+    .toggle-link:hover {
+      opacity: 1;
+      text-decoration: underline;
+    }
+
+    
+    @keyframes bannerIn {
+      from {
+        opacity: 0;
+        transform: translateX(-120%);
+        filter: blur(8px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(0);
+        filter: blur(0);
+      }
+    }
+
+    @keyframes bannerOut {
+      from {
+        opacity: 1;
+        transform: translateX(0);
+      }
+
+      to {
+        opacity: 0;
+        transform: translateX(-120%);
+      }
+    }
+@media (max-width: 960px) {
+      .layout { grid-template-columns: 1fr; }
+      .filters { order: 2; }
+      .card { order: 1; }
+    }
+
+    @media (max-width: 700px) {
+      .card { padding: 20px; }
+      h1 { font-size: clamp(1.45rem, 8.2vw, 2rem); }
+      .sub { max-width: 100%; }
+      .actions { flex-direction: column; }
+      .btn { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <aside id="redirectBanner" class="redirect-banner" aria-label="Переадресация">
+    <button id="redirectBannerClose" class="redirect-banner__close" type="button" aria-label="Закрыть" onclick="this.parentElement.remove(); return false;">×</button>
+    <p class="redirect-banner__title">Есть сайт с рандомными конфигами</p>
+    <p class="redirect-banner__text">Открой сайт с генератором случайных <code>.cfg</code> для CS2.</p>
+    <a class="redirect-banner__link" href="../SITECFG/index.html">Перейти на сайт конфигов</a>
+  </aside>
+  <section class="layout">
+    <main class="pane card">
+      <h1>Рандомный CS2 сервер</h1>
+      <p class="sub">Нажми кнопку, чтобы получить команду подключения к случайному серверу с онлайном от 10 игроков.</p>
+
+      <div class="actions">
+        <button id="findBtn" class="btn btn-main">Найти сервер</button>
+        <button id="copyBtn" class="btn btn-sec" disabled>Копировать команду</button>
+        <button id="pinBtn" class="btn btn-sec" disabled>В избранное</button>
+      </div>
+
+      <div id="status" class="status">Готов к поиску.</div>
+
+      <div class="main-grid">
+        <section class="output" aria-live="polite">
+          <span class="label">Команда для консоли CS2</span>
+          <p id="command" class="command">Нажми "Найти сервер"</p>
+          <p id="meta" class="meta">Сервер ещё не выбран.</p>
+        </section>
+
+        <section id="historyPanel" class="mini-panel panel-toggle-target panel-history">
+          <h3 class="mini-title">История (10 последних)</h3>
+          <ul id="historyList" class="list"></ul>
+        </section>
+      </div>
+    </main>
+
+    <aside class="pane filters" aria-label="Фильтры серверов">
+      <h2 class="f-title">Фильтры</h2>
+
+      <div id="presetPanel" class="field panel-toggle-target panel-preset">
+        <label>Быстрые пресеты</label>
+        <div class="preset-grid" id="presetGrid">
+          <button class="preset-btn" data-map="de_mirage" data-online="20" data-word="">Mirage 20+</button>
+          <button class="preset-btn" data-map="de_dust2" data-online="10" data-word="">Dust2 10+</button>
+          <button class="preset-btn" data-map="all" data-online="30" data-word="">Any 30+</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="mapFilter">Карта</label>
+        <select id="mapFilter" class="control">
+          <option value="all">Все карты</option>
+          <option value="de_ancient">de_ancient</option>
+          <option value="de_anubis">de_anubis</option>
+          <option value="de_cache">de_cache</option>
+          <option value="de_dust2">de_dust2</option>
+          <option value="de_inferno">de_inferno</option>
+          <option value="de_mirage">de_mirage</option>
+          <option value="de_nuke">de_nuke</option>
+          <option value="de_overpass">de_overpass</option>
+          <option value="de_train">de_train</option>
+          <option value="de_vertigo">de_vertigo</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="onlineFilter">Минимум онлайна</label>
+        <input id="onlineFilter" class="control" type="number" min="0" step="1" value="10" placeholder="Например: 20" />
+      </div>
+
+      <div class="field">
+        <label for="wordFilter">Слово в названии</label>
+        <input id="wordFilter" class="control" type="text" placeholder="Например: mirage" />
+      </div>
+
+      <p class="filter-note">Фильтры применяются автоматически при поиске следующего сервера.</p>
+
+      <section class="side-section">
+        <h3 class="mini-title">Избранные серверы</h3>
+        <ul id="favoriteList" class="list"></ul>
+      </section>
+    </aside>
+  </section>
+
+  <div class="window-toggles">
+    <button id="togglePresetsBtn" class="toggle-link" type="button">Пресеты</button>
+    <button id="toggleHistoryBtn" class="toggle-link" type="button">История</button>
+  </div>
+
+  <script>
+    const API_BASE = "https://api.battlemetrics.com/servers";
+    const DEFAULT_MIN_PLAYERS = 10;
+    const PAGE_SIZE = 40;
+    const MAX_PAGES_PER_FETCH = 3;
+    const MIN_POOL_SIZE = 20;
+    const HISTORY_LIMIT = 10;
+    const STORAGE_HISTORY = "cs2_history_v1";
+    const STORAGE_FAVORITES = "cs2_favorites_v1";
+
+    function closeRedirectBanner() {
+      const banner = document.getElementById("redirectBanner");
+      if (!banner) return;
+      banner.classList.add("is-hiding");
+      setTimeout(() => {
+        banner.remove();
+      }, 280);
+    }
+
+    const redirectBanner = document.getElementById("redirectBanner");
+    const redirectBannerClose = document.getElementById("redirectBannerClose");
+
+    if (redirectBanner && redirectBannerClose) {
+      redirectBannerClose.addEventListener("click", () => {
+        redirectBanner.classList.add("is-hiding");
+        setTimeout(() => {
+          redirectBanner.remove();
+        }, 280);
+      });
+    }
+    const findBtn = document.getElementById("findBtn");
+    const copyBtn = document.getElementById("copyBtn");
+    const pinBtn = document.getElementById("pinBtn");
+    const commandEl = document.getElementById("command");
+    const metaEl = document.getElementById("meta");
+    const statusEl = document.getElementById("status");
+    const historyListEl = document.getElementById("historyList");
+    const favoriteListEl = document.getElementById("favoriteList");
+    const presetGridEl = document.getElementById("presetGrid");
+    const historyPanelEl = document.getElementById("historyPanel");
+    const presetPanelEl = document.getElementById("presetPanel");
+    const togglePresetsBtn = document.getElementById("togglePresetsBtn");
+    const toggleHistoryBtn = document.getElementById("toggleHistoryBtn");
+
+    const mapFilterEl = document.getElementById("mapFilter");
+    const onlineFilterEl = document.getElementById("onlineFilter");
+    const wordFilterEl = document.getElementById("wordFilter");
+
+    const availablePool = [];
+    const cycleUsedAddresses = new Set();
+    const cycleUsedNameKeys = new Set();
+
+    let cursorUrl = buildBaseUrl();
+    let lastCommand = "";
+    let isRefilling = false;
+    let activeFilterKey = "";
+    let currentServer = null;
+    let historyItems = safeParseArray(localStorage.getItem(STORAGE_HISTORY));
+    let favoriteItems = safeParseArray(localStorage.getItem(STORAGE_FAVORITES));
+
+    function safeParseArray(raw) {
+      try {
+        const parsed = JSON.parse(raw || "[]");
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function saveCollections() {
+      localStorage.setItem(STORAGE_HISTORY, JSON.stringify(historyItems));
+      localStorage.setItem(STORAGE_FAVORITES, JSON.stringify(favoriteItems));
+    }
+
+    function buildBaseUrl() {
+      return `${API_BASE}?filter[game]=csgo&filter[status]=online&sort=-players&page[size]=${PAGE_SIZE}`;
+    }
+
+    function getFilters() {
+      const rawOnline = Number(onlineFilterEl.value);
+      return {
+        map: (mapFilterEl.value || "all").trim().toLowerCase(),
+        minOnline: Number.isFinite(rawOnline) && rawOnline >= 0 ? rawOnline : DEFAULT_MIN_PLAYERS,
+        word: (wordFilterEl.value || "").trim().toLowerCase()
+      };
+    }
+
+    function setStatus(text, isError = false) {
+      statusEl.textContent = text;
+      statusEl.classList.toggle("error", isError);
+    }
+
+    function sleep(ms) {
+      return new Promise((resolve) => setTimeout(resolve, ms));
+    }
+
+    function pickRandomIndex(length) {
+      return Math.floor(Math.random() * length);
+    }
+
+    function normalizeToken(text) {
+      return String(text || "")
+        .toLowerCase()
+        .replace(/\d+\s*\/\s*\d+/g, " ")
+        .replace(/\b(cs2|csgo|public|vip|online|mirage|dust2|inferno)\b/g, " ")
+        .replace(/[^\p{L}\p{N}]+/gu, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    function buildNameKey(hostname, map) {
+      return `${normalizeToken(hostname)}|${normalizeToken(map)}`;
+    }
+
+    function normalizeServer(raw) {
+      const attrs = raw?.attributes || {};
+      const ip = attrs.ip || "";
+      const port = attrs.port || "";
+      const address = ip && port ? `${ip}:${port}` : "";
+      const hostname = attrs.name || "Без названия";
+      const map = String(attrs?.details?.map || "unknown").toLowerCase();
+
+      return {
+        address,
+        hostname,
+        map,
+        players: Number(attrs.players || 0),
+        maxPlayers: Number(attrs.maxPlayers || 0),
+        nameKey: buildNameKey(hostname, map)
+      };
+    }
+
+    function serverMatchesFilters(server, filters) {
+      const onlineOk = server.players >= filters.minOnline;
+      const mapOk = filters.map === "all" || server.map === filters.map;
+      const wordOk = !filters.word || server.hostname.toLowerCase().includes(filters.word);
+      return onlineOk && mapOk && wordOk;
+    }
+
+    function isValidCandidate(server, filters) {
+      const address = (server.address || "").trim();
+      const nameKey = (server.nameKey || "").trim();
+
+      return (
+        address &&
+        (server.maxPlayers === 0 || server.players < server.maxPlayers) &&
+        !cycleUsedAddresses.has(address) &&
+        !cycleUsedNameKeys.has(nameKey) &&
+        serverMatchesFilters(server, filters)
+      );
+    }
+
+    function makeMeta(server) {
+      return `${server.hostname} | ${server.players}/${server.maxPlayers || "?"} | map: ${server.map}`;
+    }
+
+    function isFavorite(address) {
+      return favoriteItems.some((item) => item.address === address);
+    }
+
+    function updatePinButton() {
+      if (!currentServer || !currentServer.address) {
+        pinBtn.disabled = true;
+        pinBtn.textContent = "В избранное";
+        return;
+      }
+
+      pinBtn.disabled = false;
+      pinBtn.textContent = isFavorite(currentServer.address) ? "Убрать из избранного" : "В избранное";
+    }
+
+    function renderHistory() {
+      historyListEl.innerHTML = "";
+
+      if (historyItems.length === 0) {
+        const p = document.createElement("p");
+        p.className = "list-empty";
+        p.textContent = "История пока пустая.";
+        historyListEl.appendChild(p);
+        return;
+      }
+
+      historyItems.forEach((item, index) => {
+        const li = document.createElement("li");
+        li.className = "list-item";
+
+        const left = document.createElement("div");
+        const code = document.createElement("code");
+        code.textContent = item.command;
+        const p = document.createElement("p");
+        p.textContent = item.meta;
+
+        left.appendChild(code);
+        left.appendChild(p);
+
+        const btn = document.createElement("button");
+        btn.className = "small-btn";
+        btn.textContent = "Повтор";
+        btn.dataset.historyIndex = String(index);
+
+        li.appendChild(left);
+        li.appendChild(btn);
+        historyListEl.appendChild(li);
+      });
+    }
+
+    function renderFavorites() {
+      favoriteListEl.innerHTML = "";
+
+      if (favoriteItems.length === 0) {
+        const p = document.createElement("p");
+        p.className = "list-empty";
+        p.textContent = "Избранных серверов нет.";
+        favoriteListEl.appendChild(p);
+        return;
+      }
+
+      favoriteItems.forEach((item, index) => {
+        const li = document.createElement("li");
+        li.className = "list-item";
+
+        const left = document.createElement("div");
+        const code = document.createElement("code");
+        code.textContent = `connect ${item.address}`;
+        const p = document.createElement("p");
+        p.textContent = item.meta;
+
+        left.appendChild(code);
+        left.appendChild(p);
+
+        const controls = document.createElement("div");
+        controls.style.display = "grid";
+        controls.style.gap = "6px";
+
+        const useBtn = document.createElement("button");
+        useBtn.className = "small-btn";
+        useBtn.textContent = "Открыть";
+        useBtn.dataset.favoriteUse = String(index);
+
+        const removeBtn = document.createElement("button");
+        removeBtn.className = "small-btn alt";
+        removeBtn.textContent = "Удалить";
+        removeBtn.dataset.favoriteRemove = String(index);
+
+        controls.appendChild(useBtn);
+        controls.appendChild(removeBtn);
+
+        li.appendChild(left);
+        li.appendChild(controls);
+        favoriteListEl.appendChild(li);
+      });
+    }
+
+    function addToHistory(server) {
+      const entry = {
+        command: `connect ${server.address}`,
+        meta: makeMeta(server),
+        server,
+        at: Date.now()
+      };
+
+      historyItems = historyItems.filter((item) => item.command !== entry.command);
+      historyItems.unshift(entry);
+      historyItems = historyItems.slice(0, HISTORY_LIMIT);
+      saveCollections();
+      renderHistory();
+    }
+
+    function applyServer(server, statusText) {
+      currentServer = server;
+      lastCommand = `connect ${server.address}`;
+      commandEl.textContent = lastCommand;
+      metaEl.textContent = makeMeta(server);
+      copyBtn.disabled = false;
+      updatePinButton();
+      setStatus(statusText || "Готово. Команда обновлена.");
+    }
+
+    function toggleFavoriteCurrent() {
+      if (!currentServer || !currentServer.address) return;
+
+      const exists = isFavorite(currentServer.address);
+      if (exists) {
+        favoriteItems = favoriteItems.filter((item) => item.address !== currentServer.address);
+        setStatus("Сервер удалён из избранного.");
+      } else {
+        favoriteItems.unshift({
+          address: currentServer.address,
+          hostname: currentServer.hostname,
+          map: currentServer.map,
+          players: currentServer.players,
+          maxPlayers: currentServer.maxPlayers,
+          nameKey: currentServer.nameKey,
+          meta: makeMeta(currentServer)
+        });
+        favoriteItems = favoriteItems.filter((item, idx, arr) => arr.findIndex((a) => a.address === item.address) === idx);
+        setStatus("Сервер добавлен в избранное.");
+      }
+
+      saveCollections();
+      renderFavorites();
+      updatePinButton();
+    }
+
+    async function fetchJsonWithRetry(url, attempts = 3) {
+      for (let i = 0; i < attempts; i++) {
+        const res = await fetch(url);
+
+        if (res.status === 429) {
+          if (i === attempts - 1) {
+            throw new Error("Слишком много запросов к API (429). Подожди 20-30 секунд и попробуй снова.");
+          }
+
+          const retryAfterSec = Number(res.headers.get("Retry-After") || 0);
+          const delayMs = retryAfterSec > 0
+            ? retryAfterSec * 1000
+            : (1200 * (2 ** i)) + Math.floor(Math.random() * 600);
+
+          await sleep(delayMs);
+          continue;
+        }
+
+        if (!res.ok) {
+          throw new Error(`Ошибка API: ${res.status}`);
+        }
+
+        return res.json();
+      }
+
+      throw new Error("Не удалось получить ответ API.");
+    }
+
+    async function refillPoolIfNeeded(filters) {
+      if (availablePool.length >= MIN_POOL_SIZE || isRefilling) return;
+
+      isRefilling = true;
+      try {
+        let nextUrl = cursorUrl;
+        const seenAddressesInBatch = new Set(availablePool.map((s) => s.address));
+        const seenNamesInBatch = new Set(availablePool.map((s) => s.nameKey));
+
+        for (let i = 0; i < MAX_PAGES_PER_FETCH && nextUrl; i++) {
+          const page = await fetchJsonWithRetry(nextUrl);
+          const servers = Array.isArray(page.data) ? page.data.map(normalizeServer) : [];
+
+          for (const server of servers) {
+            if (!isValidCandidate(server, filters)) continue;
+            if (seenAddressesInBatch.has(server.address)) continue;
+            if (seenNamesInBatch.has(server.nameKey)) continue;
+
+            seenAddressesInBatch.add(server.address);
+            seenNamesInBatch.add(server.nameKey);
+            availablePool.push(server);
+          }
+
+          nextUrl = page?.links?.next || "";
+        }
+
+        cursorUrl = nextUrl || buildBaseUrl();
+      } finally {
+        isRefilling = false;
+      }
+    }
+
+    function restartCycle() {
+      cycleUsedAddresses.clear();
+      cycleUsedNameKeys.clear();
+      availablePool.length = 0;
+      cursorUrl = buildBaseUrl();
+    }
+
+    async function getRandomServer(filters) {
+      await refillPoolIfNeeded(filters);
+
+      if (availablePool.length === 0) {
+        restartCycle();
+        await refillPoolIfNeeded(filters);
+      }
+
+      if (availablePool.length === 0) {
+        throw new Error("По текущим фильтрам серверов не найдено. Ослабь фильтры и попробуй снова.");
+      }
+
+      const randomIndex = pickRandomIndex(availablePool.length);
+      const [server] = availablePool.splice(randomIndex, 1);
+      return server;
+    }
+
+    async function handleFind() {
+      findBtn.disabled = true;
+      copyBtn.disabled = true;
+
+      const filters = getFilters();
+      const filterKey = JSON.stringify(filters);
+      if (filterKey !== activeFilterKey) {
+        activeFilterKey = filterKey;
+        restartCycle();
+      }
+
+      setStatus("Ищем новый сервер...");
+
+      try {
+        const server = await getRandomServer(filters);
+        const address = server.address.trim();
+
+        cycleUsedAddresses.add(address);
+        cycleUsedNameKeys.add(server.nameKey);
+        applyServer(server, "Готово. Команда обновлена.");
+        addToHistory(server);
+      } catch (error) {
+        commandEl.textContent = "Нажми \"Найти сервер\"";
+        metaEl.textContent = "Сервер не выбран.";
+        currentServer = null;
+        updatePinButton();
+        setStatus(error.message || "Ошибка при поиске сервера.", true);
+      } finally {
+        findBtn.disabled = false;
+      }
+    }
+
+    async function handleCopy() {
+      if (!lastCommand) return;
+      try {
+        await navigator.clipboard.writeText(lastCommand);
+        setStatus("Команда скопирована в буфер обмена.");
+      } catch {
+        setStatus("Не удалось скопировать автоматически. Скопируй вручную.", true);
+      }
+    }
+
+    function applyPreset(button) {
+      mapFilterEl.value = button.dataset.map || "all";
+      onlineFilterEl.value = button.dataset.online || String(DEFAULT_MIN_PLAYERS);
+      wordFilterEl.value = button.dataset.word || "";
+      activeFilterKey = "";
+      restartCycle();
+      setStatus("Пресет применён. Нажми 'Найти сервер'.");
+    }
+
+    function setPanelVisibility(panel, show) {
+      panel.classList.toggle("is-open", show);
+    }
+
+    historyListEl.addEventListener("click", (event) => {
+      const btn = event.target.closest("button[data-history-index]");
+      if (!btn) return;
+
+      const idx = Number(btn.dataset.historyIndex);
+      const entry = historyItems[idx];
+      if (!entry) return;
+
+      const server = entry.server;
+      if (!server || !server.address) return;
+
+      applyServer(server, "Команда взята из истории.");
+    });
+
+    favoriteListEl.addEventListener("click", (event) => {
+      const useBtn = event.target.closest("button[data-favorite-use]");
+      const removeBtn = event.target.closest("button[data-favorite-remove]");
+
+      if (useBtn) {
+        const idx = Number(useBtn.dataset.favoriteUse);
+        const fav = favoriteItems[idx];
+        if (!fav) return;
+
+        const server = {
+          address: fav.address,
+          hostname: fav.hostname,
+          map: fav.map,
+          players: Number(fav.players || 0),
+          maxPlayers: Number(fav.maxPlayers || 0),
+          nameKey: fav.nameKey || buildNameKey(fav.hostname, fav.map)
+        };
+
+        applyServer(server, "Открыт сервер из избранного.");
+        addToHistory(server);
+        return;
+      }
+
+      if (removeBtn) {
+        const idx = Number(removeBtn.dataset.favoriteRemove);
+        favoriteItems.splice(idx, 1);
+        saveCollections();
+        renderFavorites();
+        updatePinButton();
+        setStatus("Сервер удалён из избранного.");
+      }
+    });
+
+    presetGridEl.addEventListener("click", (event) => {
+      const btn = event.target.closest("button.preset-btn");
+      if (!btn) return;
+      applyPreset(btn);
+    });
+
+    togglePresetsBtn.addEventListener("click", () => {
+      const willShow = !presetPanelEl.classList.contains("is-open");
+      setPanelVisibility(presetPanelEl, willShow);
+    });
+
+    toggleHistoryBtn.addEventListener("click", () => {
+      const willShow = !historyPanelEl.classList.contains("is-open");
+      setPanelVisibility(historyPanelEl, willShow);
+    });
+
+    findBtn.addEventListener("click", handleFind);
+    copyBtn.addEventListener("click", handleCopy);
+    pinBtn.addEventListener("click", toggleFavoriteCurrent);
+
+    renderHistory();
+    renderFavorites();
+    updatePinButton();
+
+    window.addEventListener("load", () => {
+      setTimeout(() => {
+        document.body.classList.add("loaded");
+      }, 140);
+    });
+  </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
